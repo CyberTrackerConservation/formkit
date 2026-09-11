@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "formkit"
+version = "0.1.0"
+description = "Build self-contained CyberTracker survey forms from XlsForm sources and QML screens"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = ["openpyxl>=3.1"]
+
+[project.optional-dependencies]
+validate = ["pyxform>=2.0"]
+dev = ["pyxform>=2.0", "pytest>=8"]
+
+[project.scripts]
+formkit = "formkit.cli:main"
+
+[tool.setuptools]
+packages = ["formkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
