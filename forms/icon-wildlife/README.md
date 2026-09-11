@@ -1,6 +1,6 @@
 # Aerial wildlife survey
 
-Rapid, icon-based data capture for observers who must record what they see, how many, and where, with minimal attention diverted from the field. Built for tablets in a light aircraft. Developed with WCS field teams as a wildlife, bird and human-activity count. Formerly the `aerialsurvey` repository.
+Rapid, icon-based data capture for observers who must record what they see, how many, and where, with minimal attention diverted from the field. Built for tablets in a light aircraft. Developed with WCS field teams as a wildlife, bird and human-activity count.
 
 <table>
 <tr>

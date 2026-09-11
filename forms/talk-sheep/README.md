@@ -1,6 +1,6 @@
 # Sheep talk survey
 
-Hands-free, eyes-free data capture. The observer speaks; the device records, stamps the clip with a GPS location, transcribes it, and turns the transcript into a structured record. This form is a spoken count of bighorn sheep along a transect. Formerly `forms/SheepSurvey` in the `talksurvey` repository.
+Hands-free, eyes-free data capture. The observer speaks; the device records, stamps the clip with a GPS location, transcribes it, and turns the transcript into a structured record. This form is a spoken count of bighorn sheep along a transect.
 
 ## How it works
 
