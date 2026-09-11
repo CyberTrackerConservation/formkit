@@ -23,6 +23,18 @@ Rapid, icon-based data capture for observers who must record what they see, how 
 - **Per session:** aircraft registration, pilot, FSO, RSO left, RSO right (each from the `employee` list with an "other" text fallback), protocol, site, mission id.
 - **Per observation:** category, type (filtered by category), measure type and value, in or out, direction.
 
+## Records
+
+Every session writes a sequence of records, distinguished by the `type` field.
+
+| `type`  | Created when | Contains |
+| ------- | ------------ | -------- |
+| `Start` | **Start survey** | Session metadata and starting location |
+| `Data`  | Each icon tap | The observation fields, plus a copy of the metadata |
+| `Stop`  | **Stop survey** | Final location and the GPS track as zipped GeoJSON |
+
+The track is written by the `bind::ct:trackFile` setting, and its density is controlled by `locationTrackDistance` and `locationTrackInterval`.
+
 ## What a project is expected to change
 
 Only these lists on the `choices` sheet:
