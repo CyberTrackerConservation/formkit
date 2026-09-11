@@ -53,49 +53,46 @@ Upload `build/<name>/form.xlsx` and every other file in that folder to your back
 [KoBoToolbox](https://kobotoolbox.org) is free and works well with CyberTracker. You need a built form (see above) and a KoBoToolbox account.
 
 ### 1. Log in
-Sign in at [kobotoolbox.org](https://www.kobotoolbox.org/). If you do not have an account, create one first. Note which server you signed up on, because CyberTracker will ask for it later.
+Sign in at [kobotoolbox.org](https://www.kobotoolbox.org/) with your username and password. If you do not have an account, use **Create an account** first. Note which server you are on (for example `kf.kobotoolbox.org` or `eu.kobotoolbox.org`), because CyberTracker asks for it later.
 
 <img src="docs/screenshots/kobo-1-login.png" width="600" />
 
-### 2. Create a new project
-Click **NEW** and give the project a name. Do not add questions here. The form comes from the spreadsheet in the next step.
+### 2. Start a new project
+Click **NEW** at the top of the project list.
 
 <img src="docs/screenshots/kobo-2-new-project.png" width="600" />
 
-### 3. Open the FORM tab
-Open the project and select the **FORM** tab.
+### 3. Choose "Upload an XLSForm"
+KoBoToolbox asks where the form should come from. Choose **Upload an XLSForm**. Do not use **Build from scratch**: the form comes from the built spreadsheet, not from the form builder.
 
-<img src="docs/screenshots/kobo-3-form-tab.png" width="600" />
+<img src="docs/screenshots/kobo-3-upload-xlsform.png" width="600" />
 
 ### 4. Upload the built spreadsheet
-Click **Replace form**, choose **Upload an XLSForm**, and browse to `build/<name>/form.xlsx`. Use the file in `build/`, not the one in `forms/`. The one in `forms/` names its screens by file name and will not work on the device.
+Drag `build/<name>/form.xlsx` onto the upload box, or click it to browse. Use the file in `build/`, not the one in `forms/`. The one in `forms/` names its screens by file name and will not work on the device.
 
-<img src="docs/screenshots/kobo-4-replace-form.png" width="600" />
+<img src="docs/screenshots/kobo-4-choose-file.png" width="600" />
 
-> **Do not edit the form in the KoBoToolbox form builder.** The builder does not show the CyberTracker columns and saving from it removes them. Make changes in the spreadsheet, rebuild, and repeat this step.
+### 5. Name the project
+Enter a project name, pick a sector and a country, and click **Create project**. The name is what appears in CyberTracker's project list.
 
-### 5. Upload the media
-If the `build/<name>/` folder contains icons or images, open **SETTINGS**, then **Media**, and upload every file in that folder except `form.xlsx`. File names must match the `media::image` column in the spreadsheet exactly. A form with no media can skip this step.
+<img src="docs/screenshots/kobo-5-project-details.png" width="600" />
 
-<img src="docs/screenshots/kobo-5-media.png" width="600" />
+### 6. Attach the media
+Open the **SETTINGS** tab, then **Media**. Drag every file from `build/<name>/` except `form.xlsx` onto the upload box. For `icon-wildlife` that is 120 icons; for `talk-sheep` it is the single `icon.png`. File names must match the `media::image` column in the spreadsheet exactly. A form with no media can skip this step.
 
-### 6. Deploy
-Click **DEPLOY**. When you change the form later, upload the new `form.xlsx` with **Replace form** again and click **REDEPLOY**.
+<img src="docs/screenshots/kobo-6-attach-media.png" width="600" />
 
-<img src="docs/screenshots/kobo-6-deploy.png" width="600" />
+### 7. Deploy
+Open the **FORM** tab and click **DEPLOY**. The form is now available to CyberTracker.
 
-### 7. Connect CyberTracker
+<img src="docs/screenshots/kobo-7-deploy.png" width="600" />
+
+> **Do not edit the form in the KoBoToolbox form builder** (the pencil icon on this tab). The builder does not show the CyberTracker columns and saving from it removes them. To change the form, edit the spreadsheet, run `formkit build`, use **Replace form** (the arrows icon on this tab) to upload the new `form.xlsx`, and click **REDEPLOY**.
+
+### 8. Connect CyberTracker
 Install CyberTracker on the device from the [download page](https://cybertrackerwiki.org/xlsform/download). Open the app, tap the **+** button, choose **KoBoToolbox**, pick your server, and sign in. Your projects are listed. Tap the form to download it and its media, then tap it again to start.
 
-<table>
-<tr>
-<td><img src="docs/screenshots/ct-1-connect.png" width="240" /></td>
-<td><img src="docs/screenshots/ct-2-login.png" width="240" /></td>
-<td><img src="docs/screenshots/ct-3-select-form.png" width="240" /></td>
-</tr>
-</table>
-
-Data collected on the device is uploaded with **Submit** and appears under the project's **DATA** tab.
+Data collected on the device is uploaded with **Submit** and appears under the project's **DATA** tab in KoBoToolbox.
 
 ## Making your own form
 
