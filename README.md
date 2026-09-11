@@ -78,6 +78,4 @@ Open the repo in the assistant and describe what you need, for example:
 
 The assistant checks its work with `formkit build`, which fails on a missing screen or media file and runs pyxform and ODK Validate on the result. It cannot run the screens. Behaviour on the device is checked with the [desktop simulator](https://cybertrackerwiki.org/xlsform/download).
 
-## History
 
-This repository merges the former `aerialsurvey` and `talksurvey` repositories. MIT licensed. Built on CyberTracker, XlsForm, KoBoToolbox, ODK and Survey123, with thanks to the field teams who tested these forms in the air and on the ground.
