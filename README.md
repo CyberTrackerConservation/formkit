@@ -9,7 +9,7 @@ How the system works and how to set it up with KoBoToolbox is on the wiki: [cybe
 | Form | Designed for | How data is entered |
 | ---- | ------------ | ------------------- |
 | [icon-wildlife](forms/icon-wildlife/) | Rapid counts from a moving aircraft or vehicle, on a tablet | Tap large icons. Location is captured at the moment of the tap. |
-| [talk-sheep](forms/talk-sheep/) | Hands-free, eyes-free counts, for example along a transect | Speak. The app records, transcribes and parses each utterance into a record. |
+| [talk-survey](forms/talk-survey/) | Hands-free, eyes-free counts, for example along a transect | Speak. The app records, transcribes and parses each utterance into a record. |
 
 Each form's README has screenshots, what it records, which lists a project is expected to change, and which rows and settings its screens depend on.
 
@@ -44,7 +44,7 @@ formkit list                      # forms in the repo
 formkit build                     # build every form into build/
 formkit build icon-wildlife       # build one form
 formkit validate                  # static checks without building
-formkit dump talk-sheep           # print the spreadsheet as Markdown tables
+formkit dump talk-survey           # print the spreadsheet as Markdown tables
 pytest                            # build everything and check it
 ```
 
@@ -74,7 +74,7 @@ Open the repo in the assistant and describe what you need, for example:
 
 > Copy icon-wildlife to a new form called icon-marine for counting turtles, dugongs, boats and nets from a light aircraft. Metadata should be aircraft, pilot, two observers and transect number. Find icons on wildlifeicons.org. Build it and tell me what to upload.
 
-> In talk-sheep, add a field for group size and an alias so that "herd of" is understood as group size. Rebuild and check it validates.
+> In talk-survey, add a field for group size and an alias so that "herd of" is understood as group size. Rebuild and check it validates.
 
 The assistant checks its work with `formkit build`, which fails on a missing screen or media file and runs pyxform and ODK Validate on the result. It cannot run the screens. Behaviour on the device is checked with the [desktop simulator](https://cybertrackerwiki.org/xlsform/download).
 

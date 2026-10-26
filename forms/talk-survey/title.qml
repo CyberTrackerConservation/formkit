@@ -139,6 +139,9 @@ Item {
     }
 
     Component.onCompleted: {
+        // Sightings are deleted from the device once the server has them.
+        form.deleteSightingsOnUpload = true
+
         timeline.processPendingSessions()
         internal.working = App.transcribeQueue.hasWork()
     }

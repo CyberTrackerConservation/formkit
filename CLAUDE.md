@@ -41,7 +41,7 @@ Form-specific rules are in `forms/<name>/README.md`. Read it for the form you ar
 
 The screens are QML and read the spreadsheet in two different styles:
 
-- `talk-sheep` finds fields by tag. Fields carry `metadata` or `fill` in the `bind::ct:tag.timeline` column, and the screens call `form.buildTaggedFields(...)`. Adding a field is a spreadsheet change only.
+- `talk-survey` finds fields by tag. Fields carry `metadata` or `fill` in the `bind::ct:tag.timeline` column, and the screens call `form.buildTaggedFields(...)`. Adding a field is a spreadsheet change only.
 - `icon-wildlife` names fields directly. `metadata.qml` lists the metadata field names in `filterFieldUids`, derives `mission_id` from the site, and skips to `observation_category`. `title.qml` uses `wcs.svg` as a watermark. When a copy of this form changes those fields, change those lines too.
 
 Screens cannot be run here. Behaviour on the device is verified with the CyberTracker desktop simulator from https://cybertrackerwiki.org/xlsform/download. Say so when a change touches QML.
