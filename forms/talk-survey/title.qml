@@ -4,6 +4,10 @@ import QtQuick.Layouts
 import QtQuick.Controls.Material
 import CyberTracker
 
+// Home screen. A survey is a session: the observer speaks, each clip is transcribed, and the timeline turns the
+// session into one Data record per observation, deleting the raw clips it used (their audio survives on the
+// observations). Clips the transcriber heard nothing in are kept or deleted as timeline.deleteEmpty says.
+// Records are submitted when the user presses Submit, never on save.
 Item {
     id: root
 
@@ -53,13 +57,19 @@ Item {
             showStatusIcon: true
             filter.projectUid: form.project.uid
             filter.stateSpace: "*"
-            groupBy: 6
+            groupBy: 6 /*SightingListModel.GroupBy.SessionId*/
             showNullGroup: false
             checkable: false
             active: true
 
+            // Nothing is edited here: the stop record carries the session track, so show it; every other record
+            // is shown in the inspector.
             onClicked: function (sighting, index) {
                 if (sighting.trackOnly) {
+                    return
+                }
+
+                if (sighting.trackFileName !== "") {
                     showTrackFile(page, sighting.trackFileName, sighting.trackFileSummary)
                     return
                 }
@@ -82,7 +92,7 @@ Item {
                 icon.source: "qrc:/icons/upload_multiple.svg"
                 onClicked: {
                     if (App.transcribeQueue.working) {
-                        App.showError("Wait, transcription in progress")
+                        App.showError(qsTr("Wait, transcription in progress"))
                         return
                     }
 
@@ -114,10 +124,13 @@ Item {
             FooterButton {
                 Layout.fillWidth: true
                 text: qsTr("New survey")
+                enabled: !internal.working
                 icon.source: "qrc:/icons/plus.svg"
                 onClicked: {
                     form.newSessionId()
                     form.newSighting(true)
+
+                    // Every record of the survey carries its session id; clips copy it from here.
                     form.setFieldValue(form.rootRecordUid, "survey_id", form.sessionId)
                     form.resetFieldValue(form.rootRecordUid, "location")
                     form.wizard.skip("location")
@@ -126,6 +139,7 @@ Item {
         }
     }
 
+    // Turns each finished session's clips into observation sightings, then fills their fields from the text.
     Timeline {
         id: timeline
         commandStart: form.project.timelineParams.commandStart
@@ -134,24 +148,34 @@ Item {
         audioFieldUid: "audio"
         locationFieldUid: "location"
         transcribeFieldUid: "transcribe"
+        sessionIdFieldUid: "survey_id"
         fillFieldUids: form.buildTaggedFields(form.rootRecordUid, "timeline", "fill")
         extraFieldValues: ({ type: "Data" })
+        deleteSources: true
     }
 
     Component.onCompleted: {
         // Sightings are deleted from the device once the server has them.
         form.deleteSightingsOnUpload = true
 
-        timeline.processPendingSessions()
-        internal.working = App.transcribeQueue.hasWork()
+        processSessions()
     }
 
     Connections {
         target: App.transcribeQueue
 
-        function onWorkCompleted() {
-            timeline.processPendingSessions()
+        function onWorkingChanged() {
             internal.working = App.transcribeQueue.hasWork()
         }
+
+        function onWorkCompleted() {
+            processSessions()
+        }
+    }
+
+    // Process sessions whose clips are all transcribed. Submission is manual, from the Submit button.
+    function processSessions() {
+        timeline.processPendingSessions()
+        internal.working = App.transcribeQueue.hasWork()
     }
 }

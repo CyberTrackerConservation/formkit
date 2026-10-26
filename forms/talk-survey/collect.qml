@@ -2,9 +2,11 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Controls.Material
-import QtPositioning
 import CyberTracker
 
+// Collection. Runs the voice recorder continuously; each utterance becomes a Voice record with its audio,
+// location and time, queued for transcription. The screen is a reminder of what can be said. Stop survey snaps
+// the track onto the Stop record and pends the session for the timeline on the home screen.
 ColumnLayout {
     id: root
 
@@ -17,18 +19,20 @@ ColumnLayout {
 
         property alias listening: recorder.listening
         property alias recording: recorder.recording
-        property int duration: 0
 
         property string headerText: ""
         property var fillFieldUids: form.buildTaggedFields(form.rootRecordUid, "timeline", "fill")
 
         Component.onCompleted: {
             let metadataFields = form.buildTaggedFields(form.rootRecordUid, "timeline", "metadata")
-            let headerFieldUid = metadataFields[metadataFields.length - 1]
-            headerText = form.getFieldDisplayValue(form.rootRecordUid, headerFieldUid)
+            if (metadataFields.length > 0) {
+                headerText = form.getFieldDisplayValue(form.rootRecordUid, metadataFields[metadataFields.length - 1])
+            }
         }
-
     }
+
+    // Deferred so it runs after the list has laid out and restored any saved position.
+    Component.onCompleted: Qt.callLater(listView.positionViewAtBeginning)
 
     SightingListModel {
         id: sightingListModel
@@ -36,35 +40,22 @@ ColumnLayout {
         stateSpace: form.stateSpace
     }
 
-    PositionSource {
-        id: positionSource
-        active: true
-        name: App.positionInfoSourceName
-        updateInterval: 1000
-    }
-
     VoiceRecorder {
         id: recorder
 
         speed: 1
 
-        onVoiceStarted: function(filePath) {
-            console.log("Voice started: " + filePath)
+        onVoiceStarted: function (filePath) {
             form.snapCreateTime()
             form.setFieldValue(form.rootRecordUid, "location", App.lastLocation.toMap)
         }
 
-        onVoiceCompleted: function(filePath, duration, deleted) {
-            console.log("Voice completed: " + duration + "ms, deleted: " + deleted)
+        onVoiceCompleted: function (filePath, duration, deleted) {
             if (deleted === true) {
                 return
             }
 
-            saveSighting(filePath, duration)
-        }
-
-        onDurationChanged: function() {
-            internal.duration = recorder.duration
+            saveClip(filePath, duration)
         }
 
         Component.onCompleted: {
@@ -74,7 +65,7 @@ ColumnLayout {
 
     spacing: 0
 
-    // Header.
+    // Header: home, track state, map, the session title, and Stop survey.
     Rectangle {
         id: h
         Layout.fillWidth: true
@@ -104,9 +95,10 @@ ColumnLayout {
                     icon.width: Style.toolButtonSize
                     icon.height: Style.toolButtonSize
                     icon.color: h.textColor
-                    opacity: enabled ? 1.0 : 0.5
+                    // Leave the project with this screen on the saved stack: reopening returns here, mid-session.
                     onClicked: {
-                        form.popPagesToParent()
+                        recorder.flush()
+                        App.popPageStack()
                     }
                 }
 
@@ -115,10 +107,7 @@ ColumnLayout {
                     icon.width: Style.toolButtonSize
                     icon.height: Style.toolButtonSize
                     icon.color: h.textColor
-                    opacity: enabled ? 1.0 : 0.5
-                    onClicked: {
-                        App.showToast(form.trackStreamer.rateFullText)
-                    }
+                    onClicked: App.showToast(form.trackStreamer.rateFullText)
                 }
 
                 ToolButton {
@@ -126,10 +115,7 @@ ColumnLayout {
                     icon.width: Style.toolButtonSize
                     icon.height: Style.toolButtonSize
                     icon.color: h.textColor
-                    opacity: enabled ? 1.0 : 0.5
-                    onClicked: {
-                        form.pushPage("qrc:/MapsPage.qml")
-                    }
+                    onClicked: form.pushPage("qrc:/MapsPage.qml")
                 }
             }
 
@@ -141,7 +127,7 @@ ColumnLayout {
                 horizontalAlignment: Qt.AlignHCenter
                 clip: true
                 color: h.textColor
-                text: internal.headerText
+                text: internal.headerText !== "" ? internal.headerText : form.project.name
             }
 
             RowLayout {
@@ -152,30 +138,25 @@ ColumnLayout {
                 spacing: 0
 
                 RoundButton {
-                    id: stopButton
                     Layout.alignment: Qt.AlignVCenter
                     Layout.fillWidth: true
-                    text: "Stop survey"
+                    text: qsTr("Stop survey")
                     font.pixelSize: App.settings.font12
                     radius: App.scaleByFontSize(4)
-                    onClicked: {
-                        stopSurvey()
-                    }
+                    onClicked: stopSurvey()
                 }
             }
         }
     }
 
+    // The prompt sheet: every spoken field and the values it accepts.
     ListViewV {
         id: listView
         Layout.fillWidth: true
         Layout.fillHeight: true
-        property bool highlightInvalid: false
-
         spacing: 0
 
         model: FieldListProxyModel {
-            id: fieldListModel
             recordUid: form.rootRecordUid
             filterFieldUids: internal.fillFieldUids
         }
@@ -189,24 +170,18 @@ ColumnLayout {
                     Layout.fillWidth: true
                     horizontalAlignment: Qt.AlignHCenter
                     font.pixelSize: App.settings.font14
-                    wrapMode: Label.WordWrap
                     font.bold: true
-                    text: {
-                        let timelineParams = form.project.timelineParams
-                        return "Say '" + timelineParams.commandStart + "', the fields below and then '" + timelineParams.commandStop + "'"
-                    }
+                    wrapMode: Label.WordWrap
+                    text: qsTr("Say '%1', the fields below, then '%2'").arg(form.project.timelineParams.commandStart).arg(form.project.timelineParams.commandStop)
                 }
 
                 Label {
                     Layout.fillWidth: true
                     horizontalAlignment: Qt.AlignHCenter
                     font.pixelSize: App.settings.font14
-                    wrapMode: Label.WordWrap
                     font.bold: true
-                    text: {
-                        let timelineParams = form.project.timelineParams
-                        return "Say '" + timelineParams.commandError + "', the fields below end then '" + timelineParams.commandStop + "' to correct the prior observation"
-                    }
+                    wrapMode: Label.WordWrap
+                    text: qsTr("Say '%1', the fields, then '%2' to correct the previous observation").arg(form.project.timelineParams.commandError).arg(form.project.timelineParams.commandStop)
                 }
             }
 
@@ -220,7 +195,7 @@ ColumnLayout {
 
                 Column {
                     Layout.fillWidth: true
-                    spacing: App.scaleByFontSize(5) // default value for ColumnLayout
+                    spacing: App.scaleByFontSize(5)
                     height: listTitle.implicitHeight + listValue.implicitHeight
 
                     FieldName {
@@ -235,26 +210,10 @@ ColumnLayout {
                     Label {
                         id: listValue
                         width: parent.width
-                        text: {
-                            let field = form.getField(model.fieldUid)
-                            let fieldType = form.getFieldType(model.fieldUid)
-                            let listElementUid = form.getField(model.fieldUid).listElementUid
-                            switch (fieldType) {
-                            case "NumberField":
-                                return createNumberString(field.minValue, field.maxValue, field.decimals)
-
-                            case "CheckField":
-                                return listElementUid !== "" ? getListItems(listElementUid) : "Yes or no"
-
-                            case "StringField":
-                                return listElementUid !== "" ? getListItems(listElementUid) : "Text..."
-                            }
-
-                            return "";
-                        }
                         wrapMode: Label.Wrap
                         visible: text !== ""
                         font.pixelSize: App.settings.font14
+                        text: acceptedValues(model.fieldUid)
                     }
                 }
 
@@ -269,6 +228,7 @@ ColumnLayout {
         }
     }
 
+    // Footer: recorder state and the clip count.
     HorizontalDivider { Layout.fillWidth: true; height: App.scaleByFontSize(2) }
 
     Pane {
@@ -278,120 +238,51 @@ ColumnLayout {
 
             SquareIcon {
                 id: blinker
-
-                source: {
-                    if (internal.recording) {
-                        return "qrc:/icons/account_voice.svg"
-                    } else {
-                        return "qrc:/icons/microphone.svg"
-                    }
-                }
-
-                color: {
-                    if (internal.recording) {
-                        return "red"
-                    } else if (internal.listening) {
-                        return "blue"
-                    } else {
-                        return "#808080"
-                    }
-                }
+                source: internal.recording ? "qrc:/icons/account_voice.svg" : "qrc:/icons/microphone.svg"
+                color: internal.recording ? "red" : (internal.listening ? "blue" : "#808080")
 
                 Timer {
-                    id: blinkTimer
                     running: true
                     repeat: true
                     interval: 1000
-                    onTriggered: {
-                       blinker.opacity = blinker.opacity === 0.0 ? 1.0 : 0.0
-                    }
+                    onTriggered: blinker.opacity = blinker.opacity === 0.0 ? 1.0 : 0.0
                 }
             }
 
             Label {
                 font.pixelSize: App.settings.font14
                 font.family: "monospace"
-                horizontalAlignment: Qt.AlignHCenter
-                text: recorder.stateText + (recorder.recording ? " \u00B7 " + recorder.durationText : "")
+                text: recorder.stateText + (recorder.recording ? " · " + recorder.durationText : "")
             }
 
-            Item {
-                Layout.fillWidth: true
-            }
+            Item { Layout.fillWidth: true }
 
             Label {
                 font.pixelSize: App.settings.font14
                 font.family: "monospace"
-                horizontalAlignment: Qt.AlignHCenter
-                text: "Recordings" + " \u00B7 " + sightingListModel.count
+                text: qsTr("Recordings") + " · " + sightingListModel.count
             }
         }
     }
 
-    // Content.
+    function acceptedValues(fieldUid) {
+        let field = form.getField(fieldUid)
+        let listElementUid = field.listElementUid
+        switch (form.getFieldType(fieldUid)) {
+        case "NumberField":
+            return qsTr("A number")
 
-    function newSighting() {
-        form.newSighting(true)
-        form.resetFieldValue(form.rootRecordUid, "type")
-        form.resetFieldValue(form.rootRecordUid, "audio")
-        form.resetFieldValue(form.rootRecordUid, "location")
-        form.saveState()
+        case "CheckField":
+            return listElementUid !== "" ? listItems(listElementUid) : qsTr("Yes or no")
+
+        case "StringField":
+            return listElementUid !== "" ? listItems(listElementUid) : qsTr("Text")
+        }
+
+        return ""
     }
 
-    function saveSighting(audioFilePath, duration) {
-        let recordUid = form.rootRecordUid
-
-        form.setFieldValue(recordUid, "type", "Voice")
-
-        let mediaFilename = App.moveToMedia(audioFilePath)
-        form.setFieldValue(recordUid, "audio", ({ filename: mediaFilename, duration: duration, timestamp: form.sighting.createTime }))
-
-        let timelineParams = form.project.timelineParams
-        let speechPrompt = timelineParams.commandStart + " " +
-                           timelineParams.commandStop + " " +
-                           timelineParams.commandError + " " +
-                           form.buildSpeechPrompt(form.rootRecordUid, internal.fillFieldUids)
-
-        form.requestTranscribe(mediaFilename, speechPrompt);
-
-        form.saveSighting()
-        form.markSightingCompleted()
-
-        // New sighting.
-        newSighting()
-    }
-
-    function stopSurvey() {
-        // Stop and save currently running audio.
-        recorder.flush()
-
-        // Create a survey sighting.
-        let recordUid = form.rootRecordUid
-        let location = App.lastLocation.toMap
-
-        // Finalize the track.
-        form.pushTrackLocation(location)
-        form.snapTrack()
-        form.project.locationStreamingEnabled = false
-
-        // Create stop sighting.
-        form.snapCreateTime()
-        form.setFieldValue(recordUid, "location", location)
-        form.setFieldValue(recordUid, "type", "Stop")
-        form.saveSighting()
-        form.markSightingCompleted()
-
-        // Pend this session for timeline.
-        form.appendPendingSessionId(form.sessionId)
-
-        // Reset.
-        form.newSighting()
-        form.wizard.init(form.rootRecordUid)
-        form.saveState()
-        form.loadPages()
-    }
-
-    function getListItems(elementUid) {
+    function listItems(elementUid) {
         let elements = form.getElement(elementUid).elements
         let result = ""
         for (let i = 0; i < elements.length; i++) {
@@ -404,48 +295,67 @@ ColumnLayout {
             }
 
             result += form.getElementName(elements[i].uid)
-
-            let aliases = elements[i].aliases
-            for (let j = 0; j < aliases.length; j++) {
-                result += ' / ' + aliases[j]
-            }
         }
 
         return result
     }
 
-    function createNumberString(minValue, maxValue, decimals) {
-        const hasMin = Number.isFinite(minValue);
-        const hasMax = Number.isFinite(maxValue);
+    // A clip record: type Voice, the audio, the location snapped when speech started, and a transcription
+    // request whose transcript lands in the transcribe field.
+    function saveClip(audioFilePath, duration) {
+        let recordUid = form.rootRecordUid
+        let mediaFilename = App.moveToMedia(audioFilePath)
 
-        const base = 123.456789;
+        form.setFieldValue(recordUid, "type", "Voice")
+        form.setFieldValue(recordUid, "audio", ({ filename: mediaFilename, duration: duration, timestamp: form.sighting.createTime }))
 
-        let value;
+        let timelineParams = form.project.timelineParams
+        let speechPrompt = timelineParams.commandStart + " " + timelineParams.commandStop + " " + timelineParams.commandError + " " +
+                           form.buildSpeechPrompt(recordUid, internal.fillFieldUids)
+        form.requestTranscribe(mediaFilename, speechPrompt)
 
-        if (hasMin && hasMax) {
-            const low = Math.min(minValue, maxValue);
-            const high = Math.max(minValue, maxValue);
-            const range = high - low;
+        form.saveSighting()
+        form.markSightingCompleted()
+        form.markSightingReadonly()
 
-            value = range === 0 ? low : low + (base % range);
+        newClip()
+    }
 
-        } else if (hasMin) {
-            value = minValue + base;
+    // Next clip copies the session values; clear what belongs to the previous record.
+    function newClip() {
+        form.newSighting(true)
+        form.resetFieldValue(form.rootRecordUid, "type")
+        form.resetFieldValue(form.rootRecordUid, "audio")
+        form.resetFieldValue(form.rootRecordUid, "transcribe")
+        form.resetFieldValue(form.rootRecordUid, "location")
+        form.saveState()
+    }
 
-        } else if (hasMax) {
-            value = maxValue >= base ? base : maxValue;
+    // The Stop record carries the session track.
+    function stopSurvey() {
+        recorder.flush()
 
-        } else {
-            value = base;
-        }
+        let recordUid = form.rootRecordUid
+        let location = App.lastLocation.toMap
 
-        // Handle decimals
-        if (!Number.isFinite(decimals) || decimals < 0) {
-            // "don't care" → return natural string
-            return String(value);
-        }
+        form.pushTrackLocation(location)
+        form.snapTrack()
+        form.project.locationStreamingEnabled = false
 
-        const places = Math.min(100, Math.floor(decimals));
-        return value.toFixed(places);
+        form.snapCreateTime()
+        form.setFieldValue(recordUid, "location", location)
+        form.setFieldValue(recordUid, "type", "Stop")
+        form.saveSighting()
+        form.markSightingCompleted()
+        form.markSightingReadonly()
+
+        // Pend this session for the timeline.
+        form.appendPendingSessionId(form.sessionId)
+
+        // Back to the home screen.
+        form.newSighting()
+        form.wizard.init(form.rootRecordUid)
+        form.saveState()
+        form.loadPages()
     }
 }

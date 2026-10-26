@@ -4,6 +4,9 @@ import QtQuick.Layouts
 import QtQuick.Controls.Material
 import CyberTracker
 
+// Session setup. Edits the start location and the fields tagged metadata, validates the required ones, starts
+// track logging from that location, writes the session start record, then moves to the collect screen on the
+// first field tagged fill. Every later clip in the session copies these values.
 Item {
     id: root
 
@@ -18,7 +21,7 @@ Item {
         PageHeader {
             id: h
             Layout.fillWidth: true
-            text: "New survey"
+            text: qsTr("New survey")
             formBack: false
             backIcon: Style.homeIconSource
             backVisible: true
@@ -66,30 +69,33 @@ Item {
                 Layout.fillWidth: true
                 text: qsTr("Start survey")
                 icon.source: "qrc:/icons/play.svg"
-                onClicked: {
-                    // Validate the data.
-                    for (let i = 0; i < fieldListModel.count; i++) {
-                        if (!form.getFieldValueValid(root.recordUid, fieldListModel.get(i).fieldUid)) {
-                            listView.highlightInvalid = true
-                            return
-                        }
-                    }
-
-                    // Start the track.
-                    form.project.locationStreamingEnabled = true
-                    form.pushTrackLocation(form.getFieldValue(root.recordUid, "location"))
-
-                    // Save start sighting.
-                    form.snapCreateTime()
-                    form.setFieldValue(root.recordUid, "type", "Start")
-                    form.saveSighting()
-                    form.markSightingCompleted()
-
-                    // New sighting.
-                    form.newSighting(true)
-                    form.wizard.skip(form.buildTaggedFields(form.rootRecordUid, "timeline", "fill")[0])
-                }
+                onClicked: startSurvey()
             }
         }
+    }
+
+    function startSurvey() {
+        // Validate the session fields.
+        for (let i = 0; i < fieldListModel.count; i++) {
+            if (!form.getFieldValueValid(root.recordUid, fieldListModel.get(i).fieldUid)) {
+                listView.highlightInvalid = true
+                return
+            }
+        }
+
+        // Start the track from the session location.
+        form.project.locationStreamingEnabled = true
+        form.pushTrackLocation(form.getFieldValue(root.recordUid, "location"))
+
+        // The session start record.
+        form.snapCreateTime()
+        form.setFieldValue(root.recordUid, "type", "Start")
+        form.saveSighting()
+        form.markSightingCompleted()
+        form.markSightingReadonly()
+
+        // Clips copy the session values.
+        form.newSighting(true)
+        form.wizard.skip(form.buildTaggedFields(form.rootRecordUid, "timeline", "fill")[0])
     }
 }

@@ -34,6 +34,7 @@ Rules that apply to every form:
 - Field `name` values are XlsForm identifiers: lowercase, underscores, no spaces.
 - Choice `name` values must be unique within a list.
 - Every value in a `media::image` column must be a file in `media/`.
+- A form that uses `label::alias` must keep every label in a language column (`label::English (en)`, no bare `label`), set `default_language` on `settings`, and have no `media::image` column. KoBoToolbox treats `alias` as a language and rejects mixed translated and untranslated columns; CyberTracker cannot read a translated image column. See `forms/talk-survey/README.md`.
 
 Form-specific rules are in `forms/<name>/README.md`. Read it for the form you are editing.
 
