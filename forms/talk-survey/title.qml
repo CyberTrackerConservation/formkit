@@ -5,8 +5,8 @@ import QtQuick.Controls.Material
 import CyberTracker
 
 // Home screen. A survey is a session: the observer speaks, each clip is transcribed, and the timeline turns the
-// session into one Data record per observation, deleting the raw clips it used (their audio survives on the
-// observations). Clips the transcriber heard nothing in are kept or deleted as timeline.deleteEmpty says.
+// session into one Data record per observation. Whether clips are kept or deleted afterwards is set by
+// timeline.deleteSources and timeline.deleteEmpty in form.xlsx; this form keeps them all.
 // Records are submitted when the user presses Submit, never on save.
 Item {
     id: root
@@ -140,18 +140,16 @@ Item {
     }
 
     // Turns each finished session's clips into observation sightings, then fills their fields from the text.
+    // The command words and the deleteEmpty and deleteSources policies come from the bind::ct:timeline.*
+    // settings in form.xlsx; only the field names are declared here.
     Timeline {
         id: timeline
-        commandStart: form.project.timelineParams.commandStart
-        commandStop: form.project.timelineParams.commandStop
-        commandError: form.project.timelineParams.commandError
         audioFieldUid: "audio"
         locationFieldUid: "location"
         transcribeFieldUid: "transcribe"
         sessionIdFieldUid: "survey_id"
         fillFieldUids: form.buildTaggedFields(form.rootRecordUid, "timeline", "fill")
         extraFieldValues: ({ type: "Data" })
-        deleteSources: true
     }
 
     Component.onCompleted: {
